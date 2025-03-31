@@ -1,0 +1,94 @@
+\documentclass[12pt, letter]{article}
+
+\usepackage[top=2.5cm,right=2cm,left=2cm,bottom=2.5cm]{geometry}
+\usepackage[]{enumitem}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{physics}
+
+\author{Ali Mahani}
+\title{Morris Lecar Equations to use for FORCE training}
+%\date{}
+
+\begin{document}
+	\maketitle
+	
+	The equations from the lecture series for the Morris Lecar model are as follows:
+	\begin{equation}
+		\begin{aligned}
+			C\dv{V_i}{t} &= I - g_L(V_i - E_L) - g_K n_i (V_i - E_K) - g_{Ca} m_\infty(V_i) (V_i - E_{Ca}) + I_{psp, i}\\
+			I_{psp, i} &= -\sum_{j=1}^{N} \bar{g}_{ij} s_j(t) (V_i - E_{ij})\\
+			\dv{n_i}{t} &= \left[\frac{n_\infty(V_i) - n_i}{\tau_n(V_i)}\right]\\
+			m_\infty(V_i) &= \frac{1}{2} \left[1 + \tanh(\frac{V_i - V_1}{V_2})\right]\\
+			n_\infty(V_i) &= \frac{1}{2} \left[1 + \tanh(\frac{V_i - V_3}{V_4})\right]\\
+			\tau_n(V_i) &= \left[\phi \cosh(\frac{V_i - V_3}{2 V_4})\right]^{-1}\\
+			\dv{s_i}{t} &= a_r T(V_i)(1 - s_i) - a_d s_i\\
+			T(V_i) &= \frac{T_{max}}{1 + \exp(-\frac{V_i - V_T}{K_p})}					
+		\end{aligned}
+	\end{equation}
+	where 
+	\begin{equation}
+		E_{ij} = \{E_+, E_-\}
+	\end{equation}
+	for $E_+$ for AMPA and $E_-$ for GABA.
+	and 
+	\begin{equation}
+		E_{ij} = E_{kj}, \qquad \forall i,j,k \le N
+	\end{equation}
+	where the following \textbf{variables}
+	\begin{itemize}
+		\item $V_i$: The membrane potential of the neurons.
+		\item $n_i$: recovery variable: probability that the $K^+$ channel is conducting. 
+	\end{itemize}
+	and \textbf{parameters} in the \textbf{Hodgkin-Class I} with random coupling:
+	\begin{itemize}
+		\item $I = 100 pA$: The applied current.
+		\item $C = 20 pF$: membrane capacitance.
+		\item $g_L = 2, g_K = 8, g_{Ca} = 4 nS$: leak, K, Ca conductances through the memeber ion channels.
+		\item $E_L = -60, E_K = -84, E_{Ca} = 120 mV$: equilibrium potential of relevant ion channels.
+		\item $V_1=-1.2, V_2 = 18, V_3 = 12, V_4 = 17.4 mV$: tuning parameters for steady state and time constant.
+		\item $\phi = 0.067 Hz$: the reference frequency.
+		\item $a_r = 1.1, a_d = 0.19 ms^{-1}$: rise and decay inverse time constants for the post-synaptic weights.
+		\item $V_T = 2, K_p = 5 mV, T_{max} = 1$: Tuning parameters for the post-synaptic potential.
+		\item $\bar{g}_{ij}$: weight matrix taken randomly from a normal distribution. Details to follow.
+	\end{itemize}
+	
+	In vector form, the post-synaptic potential becomes
+	\begin{equation}
+		\vec{I}_{psp} = \left(\mathbf{\bar{g}}\ + \mathbf{\hat{\eta}}.\mathbf{\hat{\phi}}^\intercal\right) \otimes (\vec{V}.\mathbf{1}^\intercal - \mathbf{\hat{E}}).\vec{s}(t)
+	\end{equation}
+
+	\pagebreak
+
+	The Morris-Lecar model network is created using the following Formula
+	\begin{equation}    \label{eq:morris-lecar}
+	\begin{aligned}
+		C \dot{\vb*{v}} &= \vb*{f}(\vb*{v}, \vb{X}) + \vb*{I}_{psc}\\
+		\vb*{I}_{psc} &= - g \vb*{w} \bigotimes (\vb*{v} - \vb{E}) \cdot \vb*{s}  \\
+		\dot{\vb*{s}} &= a_r T(\vb*{v}) (1 - \vb*{s}) - a_d \vb*{s}
+	\end{aligned}
+	\end{equation}
+	where 
+	\begin{itemize}
+		\item $\vb*{v}$ is the membrane potential for all the neurons,
+		\item $\vb{X}$ denotes all the implicit variables (e.g., $n$, $m$, etc.)
+		\item  $C$ is the membrane capacitance,
+		\item $\vb*{f}$ denotes the dynamics of the Morris-Lecar neuronal model,
+		\item $\vb*{I}_{psc}$ is the post-synaptic potential,
+		\item $g$ is the conductance (connection strength) between the neurons,
+		\item $\vb*{w}$ is the adjacency matrix of the network with a sparsity scaling with $N^{-1}$
+		\item $\vb{E}$ being the reversal potential of the pre-synaptic neurons denoting whether they are inhibitory or excitatory.
+	\end{itemize}
+	
+	Adding the FORCE training method to eq~\ref{eq:morris-lecar} we get:
+	\begin{equation}
+		\begin{aligned}
+			C\dot{\vb*{v}} &= f(\vb*{v}, \vb{X}) + \vb*{I}_{psc} + \vb*{\eta} \vb*{\varphi}^T \vb*{s}
+		\end{aligned}
+	\end{equation}
+	
+
+
+
+\end{document}
