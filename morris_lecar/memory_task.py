@@ -3,17 +3,17 @@ from pathlib import Path
 
 # Add the parent directory to sys.path
 project_root = Path(__file__).resolve().parent.parent
-sys.path.append(str(project_root))
+sys.path.append(str(project_root / "ml-force"))
 
 from typing import Literal, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from ml_force.models import MorrisLecar, MorrisLecarCurrent
+from ml_force.utils import minmax_transform
 from scipy.signal import convolve
 from tqdm import tqdm
-
-from ml_force import MorrisLecar, MorrisLecarCurrent, minmax_transform
 
 
 def smooth(

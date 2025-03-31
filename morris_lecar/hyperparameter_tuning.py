@@ -1,29 +1,37 @@
 #!/usr/bin/env python
 
-import numpy as np
-import matplotlib.pyplot as plt
+import sys
+from pathlib import Path
 
-from ml_block import MorrisLecarBlock, z_transform
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Add the parent directory to sys.path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root / "ml-force"))
+
+
+from ml_force.models import MorrisLecar, z_transform
+
 
 def rmse(x, x_hat):
-    """Return the Root Mean Squared Error for `x` vs `x_hat`.
-    """
+    """Return the Root Mean Squared Error for `x` vs `x_hat`."""
     return np.sqrt(np.mean((x - x_hat) ** 2))
 
 
 def main():
     np.random.seed(1)
-    
+
     Q_range = np.arange(1, 52, 10)
-    lamda = 30.
-    gbar_range = np.linspace(0., 0.05, 6)
-    
+    lamda = 30.0
+    gbar_range = np.linspace(0.0, 0.05, 6)
+
     ### Global params for the model
     T = 20000
     dt = 1e-2
     t = np.arange(0, T, dt)
     nt = t.size
-    x = np.sin(2 * .8 * np.pi * t / 1000)
+    x = np.sin(2 * 0.8 * np.pi * t / 1000)
     # y = np.cos(2 * .2 * np.pi * t / 1000)
     # x = np.vstack([x, y])
     # x = x.T
@@ -35,7 +43,7 @@ def main():
     NE = 100
     NI = 100
     N = NI + NE
-    
+
     # input current for I and E neurons
     Ie = 95
     Ii = 95
@@ -46,43 +54,69 @@ def main():
     # current = np.random.rand(N, 1) * Ie
 
     # RLS params
-    rls_start = round(T * .02)
+    rls_start = round(T * 0.02)
     rls_start = 1500
-    rls_stop = round(T * .7)
+    rls_stop = round(T * 0.7)
     rls_step = 2
 
     for gbar in gbar_range:
-        for Q in Q_range:            
-            print(f"Running iteration for Q={Q}/{Q_range[-1]}, g={gbar}/{gbar_range[-1]}:\n")
-            
-            model = MorrisLecarBlock(supervisor=signal, BIAS=current, T=T, dt=dt, 
-                                    N=N, Q=Q, l=lamda, gbar=gbar)
+        for Q in Q_range:
+            print(
+                f"Running iteration for Q={Q}/{Q_range[-1]}, g={gbar}/{gbar_range[-1]}:\n"
+            )
 
-            random_neurons, voltage_trace = model.render(rls_start=rls_start, 
-                                                        rls_stop=rls_stop, rls_step=rls_step,
-                                                        live_plot=False, plt_interval=300,
-                                                        n_neurons=10, save_all=False)
-            
+            model = MorrisLecar(
+                supervisor=signal,
+                BIAS=current,
+                T=T,
+                dt=dt,
+                N=N,
+                Q=Q,
+                l=lamda,
+                gbar=gbar,
+            )
+
+            random_neurons, voltage_trace = model.render(
+                rls_start=rls_start,
+                rls_stop=rls_stop,
+                rls_step=rls_step,
+                live_plot=False,
+                plt_interval=300,
+                n_neurons=10,
+                save_all=False,
+            )
+
             # Get the train and test scores
             train_start = int(rls_start // dt)
             train_stop = int(rls_stop // dt)
-            train_score = round(rmse(model.sup[train_start:train_stop], 
-                                model.x_hat_rec[train_start:train_stop]), ndigits=5)                
-            test_score = round(rmse(model.sup[train_stop:], 
-                                model.x_hat_rec[train_stop:]), ndigits=5)
-            
+            train_score = round(
+                rmse(
+                    model.sup[train_start:train_stop],
+                    model.x_hat_rec[train_start:train_stop],
+                ),
+                ndigits=5,
+            )
+            test_score = round(
+                rmse(model.sup[train_stop:], model.x_hat_rec[train_stop:]), ndigits=5
+            )
+
             # Plot the supervisor and the decoder signals
             fig, ax = plt.subplots(figsize=(10, 6), nrows=1, ncols=1)
-            plt.plot(t, model.sup, 'b', label="supervisor")
-            plt.plot(t, model.x_hat_rec, 'g', label="decoded")
+            plt.plot(t, model.sup, "b", label="supervisor")
+            plt.plot(t, model.x_hat_rec, "g", label="decoded")
             plt.ylim(-2, 2)
-            plt.grid(alpha=.5)
-            plt.axvline(x=rls_start, c='r', label="start RLS")
-            plt.axvline(x=rls_stop, c='cyan', label="stop RLS")
+            plt.grid(alpha=0.5)
+            plt.axvline(x=rls_start, c="r", label="start RLS")
+            plt.axvline(x=rls_stop, c="cyan", label="stop RLS")
             plt.legend(loc=0)
-            plt.title(f"Q={Q}, l={lamda}, g={gbar}, T={T}, train={train_score}, test={test_score}")
-            plt.savefig(f"tuning_results/train_{train_score}_test_{test_score}_Q_{Q}_l_{lamda}_gbar_{gbar}_rls_results.jpg",
-                        bbox_inches='tight', dpi=250)
+            plt.title(
+                f"Q={Q}, l={lamda}, g={gbar}, T={T}, train={train_score}, test={test_score}"
+            )
+            plt.savefig(
+                f"tuning_results/train_{train_score}_test_{test_score}_Q_{Q}_l_{lamda}_gbar_{gbar}_rls_results.jpg",
+                bbox_inches="tight",
+                dpi=250,
+            )
             plt.close()
 
 

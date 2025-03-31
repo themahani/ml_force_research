@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 
-import ast
-import numpy as np
+import sys
+from pathlib import Path
+
+# Add the parent directory to sys.path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root / "ml-force"))
+
 import matplotlib.pyplot as plt
+import numpy as np
+from ml_force.models import MorrisLecar
+from ml_force.utils import z_transform
 
-from ml_block import MorrisLecarBlock, z_transform
 
-
-def import_results(fp:str):
-    f = open(fp, 'r')
+def import_results(fp: str):
+    f = open(fp, "r")
     data = f.readlines()
 
     for i, line in enumerate(data):
@@ -20,11 +26,11 @@ def import_results(fp:str):
 
 def main():
     """main body"""
-    
+
     np.random.seed(1)
-    
+
     lamda = 1e-5
-    
+
     ### Global params for the model
     T = 10000
     dt = 1e-2
@@ -39,7 +45,7 @@ def main():
     NE = 200
     NI = 200
     N = NI + NE
-    
+
     # input current for I and E neurons
     Ie = 80
     Ii = 80
@@ -47,26 +53,30 @@ def main():
     middle = N // 2
     current[:middle] *= Ie  # NE bias
     current[middle:] *= Ii  # NI bias
-    
-    default_args = {"T": T,
-                    "supervisor": signal,
-                    "BIAS": current,
-                    'dt': dt,
-                    'N': N,
-                    'l': lamda}
+
+    default_args = {
+        "T": T,
+        "supervisor": signal,
+        "BIAS": current,
+        "dt": dt,
+        "N": N,
+        "l": lamda,
+    }
     # RLS params
-    rls_start = round(T * .02)
+    rls_start = round(T * 0.02)
     rls_start = 500
-    rls_stop = round(T * .7)
+    rls_stop = round(T * 0.7)
     rls_step = 20
 
-    render_args = {"rls_start": rls_start,
-                   "rls_stop": rls_stop,
-                   "rls_step": rls_step,
-                   'live_plot': True,
-                   "plt_interval": 100,
-                   "n_neurons": 10,
-                   "save_all": False}
+    render_args = {
+        "rls_start": rls_start,
+        "rls_stop": rls_stop,
+        "rls_step": rls_step,
+        "live_plot": True,
+        "plt_interval": 100,
+        "n_neurons": 10,
+        "save_all": False,
+    }
 
     best_params = {"Q": 150, "gbar": 10, "w_rand": 1}
     model_args = default_args | best_params
