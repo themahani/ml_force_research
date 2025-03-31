@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from ml_force.models import MorrisLecar, MorrisLecarCurrent
-from ml_force.utils import minmax_transform
+from ml_force.models import minmax_transform
 from scipy.signal import convolve
 from tqdm import tqdm
 
