@@ -19,7 +19,7 @@ from tqdm import tqdm
 def smooth(
     signal: np.ndarray,
     window_len: int = 5,
-    window: Literal["hanning", "hamming", "bartlett", "blackman"] = "flat",
+    window: Literal["hanning", "hamming", "bartlett", "blackman", "flat"] = "flat",
     mode: Literal["full", "valid", "same"] = "same",
     axis: int = 0,
     method: Literal["auto", "direct", "fft"] = "auto",
@@ -304,9 +304,11 @@ def train_network(
     n_rec = torch.zeros((ml._N, 1), dtype=torch.float32, device=device)
     v_rec = torch.zeros((ml._N, 1), dtype=torch.float32, device=device)
 
+    print(f"Transient Period: {transient_time} ms")
     for _ in tqdm(range(nt_transient)):
         ml.euler_step(closed_loop=True)
 
+    print(f"Training time: {(nt * dt):.2f} ms")
     for i in tqdm(range(nt)):
         ml._BIAS = I_bias + ml.eta @ noisy_sup_tensor[i].reshape(-1, 1)
         ml.euler_step(closed_loop=True, voltage_bound=None)
@@ -346,6 +348,7 @@ def test_network(
     nt_test = test_signal_smoothed.shape[0]
     output = torch.zeros((nt_test, test_signal_smoothed.shape[1]), device=device)
 
+    print(f"Test time: {nt_test}")
     for j in tqdm(range(nt_test)):
         ml._BIAS = I_bias + ml.eta @ test_signal_smoothed[j].reshape(-1, 1)
         ml.euler_step(closed_loop=True)
@@ -467,7 +470,7 @@ def main() -> None:
 
     # Image generation parameters
     n_images = 5
-    width, height = 5, 5
+    width, height = 10, 10
     noise_level = 0.05
     multiplier = 1.0
 
