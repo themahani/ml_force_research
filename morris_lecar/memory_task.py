@@ -10,8 +10,7 @@ from typing import Literal, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from ml_force.models import MorrisLecar, MorrisLecarCurrent
-from ml_force.models import minmax_transform
+from ml_force.models import MorrisLecar, MorrisLecarCurrent, minmax_transform
 from scipy.signal import convolve
 from tqdm import tqdm
 
@@ -213,6 +212,7 @@ def generate_images(
     if n_images > 2 ** (height * width):
         raise ValueError("Number of images exceeds the maximum unique combinations.")
 
+    print("Generating Images...")
     images = (
         np.array(
             [
@@ -235,7 +235,7 @@ def generate_images(
 
 
 def save_reservoir_state(
-    ml: MorrisLecarCurrent, save_dir: Union[str, Path], save_prefix: str = None
+    ml: MorrisLecar, save_dir: Union[str, Path], save_prefix: str = None
 ) -> None:
     """Save the reservoir state variables.
 
@@ -263,6 +263,7 @@ def save_reservoir_state(
 
 def train_network(
     ml: MorrisLecarCurrent,
+    eta_input: torch.Tensor,
     noisy_signal_smoothed: np.ndarray,
     signal_smoothed: np.ndarray,
     I_bias: float = 70,
@@ -310,7 +311,7 @@ def train_network(
 
     print(f"Training time: {(nt * dt):.2f} ms")
     for i in tqdm(range(nt)):
-        ml._BIAS = I_bias + ml.eta @ noisy_sup_tensor[i].reshape(-1, 1)
+        ml._BIAS = I_bias + eta_input @ noisy_sup_tensor[i].reshape(-1, 1)
         ml.euler_step(closed_loop=True, voltage_bound=None)
         ml.x_hat_rec[i] = ml.x_hat.ravel()
 
@@ -322,6 +323,7 @@ def train_network(
 
 def test_network(
     ml: MorrisLecarCurrent,
+    eta_input: torch.Tensor,
     corrupted_test_images: np.ndarray,
     test_signal_smoothed: torch.Tensor,
     I_bias: float = 70,
@@ -332,6 +334,8 @@ def test_network(
     ----------
     ml : MorrisLecarCurrent
         Trained Morris-Lecar network
+    eta_input: torch.Tensor
+        input layer for the Morris-Lecar network
     corrupted_test_images : np.ndarray
         Set of corrupted test images
     test_signal_smoothed : torch.Tensor
@@ -350,7 +354,7 @@ def test_network(
 
     print(f"Test time: {nt_test}")
     for j in tqdm(range(nt_test)):
-        ml._BIAS = I_bias + ml.eta @ test_signal_smoothed[j].reshape(-1, 1)
+        ml._BIAS = I_bias + eta_input @ test_signal_smoothed[j].reshape(-1, 1)
         ml.euler_step(closed_loop=True)
         output[j] = ml.x_hat.ravel()
 
@@ -388,6 +392,7 @@ def plot_test_results(
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
+    print("Generating plots...")
     for i in range(len(renders)):
         fig, ax = plt.subplots(figsize=(15, 5), ncols=3)
         clr = ax[0].imshow(
@@ -524,9 +529,14 @@ def main() -> None:
         device=device,
     )
 
+    dim = ml.sup.shape[1]
+    eta_input = Q * (
+        2 * torch.rand(size=(N, dim), dtype=torch.float32, device=device) - 1
+    )
+
     # Train network
     s_rec, n_rec, v_rec = train_network(
-        ml, noisy_signal_smoothed, signal_smoothed, I_bias, dt
+        ml, eta_input, noisy_signal_smoothed, signal_smoothed, I_bias, dt
     )
     save_reservoir_state(ml, save_dir, f"_N{N}_Q{Q}_gbar{gbar}_l{lamda}_p{p_sparsity}")
 
@@ -568,7 +578,7 @@ def main() -> None:
 
     # Test network
     output = test_network(
-        ml, corrupted_test_images, corrupted_test_signal_smoothed, I_bias
+        ml, eta_input, corrupted_test_images, corrupted_test_signal_smoothed, I_bias
     )
 
     # Plot and save results
