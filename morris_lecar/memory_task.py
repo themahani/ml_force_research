@@ -1,3 +1,5 @@
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -424,7 +426,7 @@ def plot_test_results(
         )
         plt.close(fig)
 
-    return np.mean(losses)
+    return np.mean(losses), losses
 
 
 def unravel_image(image: np.ndarray, height: int, width: int) -> np.ndarray:
@@ -454,6 +456,33 @@ def rmse(output: np.ndarray, target: np.ndarray) -> float:
     return np.sqrt(np.mean((output - target) ** 2))
 
 
+def save_hits(losses: list, test_exposures: np.ndarray, save_dir: str) -> None:
+    hits = []
+    for i in range(len(losses)):
+        if losses[i] < 0.2:
+            hits.append((i, test_exposures[i], losses[i]))
+
+    image_hits = np.array([item[1] for item in hits])
+
+    hits_dicts = [
+        {
+            "Image ID": int(item),
+            "Count": int(np.sum(image_hits == item)),
+            "Losses": [float(item1[2]) for item1 in hits if item1[1] == item],
+            "Exposures": [int(item1[0]) for item1 in hits if item1[1] == item],
+        }
+        for item in np.unique(image_hits)
+    ]
+
+    print(f"Images retrieved correctly: {np.unique([item[1] for item in hits])}")
+
+    for hits_dict in hits_dicts:
+        print(hits_dict)
+
+    with open(os.path.join(save_dir, "hits.json"), "w") as file:
+        json.dump(hits_dicts, file)
+
+
 def main() -> None:
     """Execute the memory task training and testing workflow.
 
@@ -474,7 +503,7 @@ def main() -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
 
     # Image generation parameters
-    n_images = 5
+    n_images = 2
     width, height = 10, 10
     noise_level = 0.05
     multiplier = 1.0
@@ -487,7 +516,7 @@ def main() -> None:
     Q = 50
     gbar = 15
     lamda = 0.8
-    p_sparsity = 0.1
+    p_sparsity = 0.01
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Generate images
@@ -497,7 +526,7 @@ def main() -> None:
 
     # Generate training signals
     signal, noisy_signal, exposures, time_stamps = generate_signals(
-        images, corrupted_images, height, width
+        images, corrupted_images, height, width, n_exposures=20, dt=dt
     )
 
     # Set total time T based on signal length
@@ -542,7 +571,7 @@ def main() -> None:
 
     # Generate test data
     n_tasks = 20
-    duration = 3000
+    duration = 2000
     nt = int(duration // dt)
     test_exposures = np.random.choice(exposures, size=n_tasks, replace=True)
     test_images = np.array(
@@ -555,7 +584,7 @@ def main() -> None:
     # Generate test signals
     test_signal = []
     corrupted_test_signal = []
-    nt_transient = int(2000 // dt)
+    nt_transient = int(1500 // dt)
 
     for image_id in test_exposures:
         test_signal += [np.zeros(height * width) for _ in range(nt_transient)]
@@ -582,7 +611,7 @@ def main() -> None:
     )
 
     # Plot and save results
-    mean_loss = plot_test_results(
+    mean_loss, losses = plot_test_results(
         output,
         corrupted_test_images,
         test_images,
@@ -594,6 +623,7 @@ def main() -> None:
         dt,
     )
     print(f"Average Test Loss: {mean_loss:.4f}")
+    save_hits(losses=losses, test_exposures=test_exposures, save_dir=str(save_dir))
 
 
 if __name__ == "__main__":
