@@ -10,7 +10,7 @@ from typing import Literal, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from ml_force.models import MorrisLecar, MorrisLecarCurrent, minmax_transform
+from ml_force.models import MorrisLecar, MorrisLecarCurrent
 from scipy.signal import convolve
 from tqdm import tqdm
 
@@ -100,8 +100,8 @@ def generate_signals(
     dt: float = 0.05,
     n_exposures: int = 30,
     t_transient: float = 1000,
-    nt_min: int = 2000,
-    nt_max: int = 3000,
+    nt_min: int = 3000,
+    nt_max: int = 4000,
 ) -> tuple[np.ndarray, np.ndarray, list[int], list[int]]:
     """Generate signal and noisy signal sequences for memory task.
 
@@ -134,8 +134,8 @@ def generate_signals(
         exposures: List of image indices shown
         time_stamps: List of time points when images were shown
     """
-    nt_min = nt_min // dt
-    nt_max = nt_max // dt
+    nt_min = int(nt_min // dt)
+    nt_max = int(nt_max // dt)
     nt_transient = int(t_transient // dt)
     n_images = len(images)
 
@@ -542,7 +542,7 @@ def main() -> None:
 
     # Generate test data
     n_tasks = 20
-    duration = 1000
+    duration = 3000
     nt = int(duration // dt)
     test_exposures = np.random.choice(exposures, size=n_tasks, replace=True)
     test_images = np.array(
@@ -555,7 +555,7 @@ def main() -> None:
     # Generate test signals
     test_signal = []
     corrupted_test_signal = []
-    nt_transient = int(1000 // dt)
+    nt_transient = int(2000 // dt)
 
     for image_id in test_exposures:
         test_signal += [np.zeros(height * width) for _ in range(nt_transient)]
@@ -567,9 +567,9 @@ def main() -> None:
     corrupted_test_signal = np.array(corrupted_test_signal)
 
     # Smooth test signals
-    test_signal_smoothed = torch.tensor(
-        smooth(test_signal, **smoothing_params), dtype=torch.float32, device=device
-    )
+    # test_signal_smoothed = torch.tensor(
+    #     smooth(test_signal, **smoothing_params), dtype=torch.float32, device=device
+    # )
     corrupted_test_signal_smoothed = torch.tensor(
         smooth(corrupted_test_signal, **smoothing_params),
         dtype=torch.float32,
