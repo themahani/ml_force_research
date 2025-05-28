@@ -1,4 +1,4 @@
-[submodule "ml-force"]
-	path = ml-force
-	url = git@github.com:themahani/ml-force.git
+[submodule "rctorch"]
+	path = rctorch
+	url = git@github.com:themahani/rctorch.git
 	branch = main
