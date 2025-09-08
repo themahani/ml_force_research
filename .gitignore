@@ -194,3 +194,6 @@ cython_debug/
 *.log
 *.out
 *.synctex.gz
+
+# Ignore Python version file for pyenv, pyenv-virtualenv, poetry, pdm, etc.
+.python-version
