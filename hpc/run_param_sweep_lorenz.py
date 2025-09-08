@@ -33,7 +33,7 @@ def main():
     # Generate the supervisor signal
     T = 20_000
     dt = 1e-1
-    x = LorenzAttractor(T, dt, tau=0.01).generate(transient_time=500.0)
+    x = LorenzAttractor(T, dt, tau=0.01).generate(transient_time=1000.0)
 
     x = x.T
     sup = minmax_transform(x, zero_mean=True)
@@ -55,7 +55,7 @@ def main():
         "Ni": Ni,
         "dt": dt,
         "BIAS": BIAS,
-        "p_sparsity": 0.1,
+        "p_sparsity": 0.01,
         "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     }
 
