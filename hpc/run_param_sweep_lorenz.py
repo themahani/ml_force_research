@@ -11,18 +11,17 @@ import sys
 import numpy as np
 import torch
 
-sys.path.append(os.path.join(os.getcwd(), ".."))
+# sys.path.append(os.path.join(os.getcwd(), ".."))
 
 from rctorch.models import MorrisLecarCurrent
-from rctorch.optimizers import BruteForceMesh, NumpyArrayEncoder
+from rctorch.optimizers import BruteForceMesh, KWArgsEncoder
 from rctorch.supervisors import LorenzAttractor
 from rctorch.utils import minmax_transform
 
 
 def main():
     # Define the output directory
-    output_dir = os.path.join(os.getcwd(), "bfm_output", "lorenz_current_grand")
-    # Define the directory to save results
+    output_dir = os.path.join(os.getcwd(), "bfm_output", "lorenz_current_test")
     os.makedirs(output_dir, exist_ok=True)
 
     seed = 1
@@ -56,22 +55,25 @@ def main():
         "dt": dt,
         "BIAS": BIAS,
         "p_sparsity": 0.01,
-        "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        "device": device,
     }
 
     try:
         params_file = os.path.join(output_dir, "reservoir_params.json")
         with open(params_file, "w") as f:
             json.dump(
-                reservoir_params, f, cls=NumpyArrayEncoder, indent=4
+                reservoir_params, f, cls=KWArgsEncoder, indent=4
             )  # Added indent for readability
     except Exception as e:
         print(f"Error exporting JSON file params: {e}")
 
-    q_range = np.linspace(20, 450, 10)
+    q_range = np.linspace(20, 450, 7)
     gbar_range = np.linspace(5, 40, 7)
 
     opt_params = {"w_in_amp": q_range, "gbar": gbar_range}
+    opt_params_file = os.path.join(output_dir, "opt_params.json")
+    with open(opt_params_file, "w") as f:
+        json.dump(opt_params, f, cls=KWArgsEncoder, indent=4)
 
     size = 1
     for _, value_range in opt_params.items():
@@ -96,7 +98,7 @@ def main():
         "closed_loop": True,
     }
 
-    n_threads = int(input("Enter number of threads:\n>>"))
+    n_threads = 3
 
     bfm = BruteForceMesh(
         reservoir_kwargs=reservoir_params,
