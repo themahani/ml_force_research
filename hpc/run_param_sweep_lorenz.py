@@ -6,14 +6,11 @@ This script runs a parameter sweep for the Lorenz system using the ml-force pack
 
 import json
 import os
-import sys
 
 import numpy as np
 import torch
 
-# sys.path.append(os.path.join(os.getcwd(), ".."))
-
-from rctorch.models import MorrisLecarCurrent
+from rctorch.models import MorrisLecar
 from rctorch.optimizers import BruteForceMesh, KWArgsEncoder
 from rctorch.supervisors import LorenzAttractor
 from rctorch.utils import minmax_transform
@@ -21,7 +18,7 @@ from rctorch.utils import minmax_transform
 
 def main():
     # Define the output directory
-    output_dir = os.path.join(os.getcwd(), "bfm_output", "lorenz_current_test")
+    output_dir = os.path.join(os.getcwd(), "bfm_output", "lorenz_conductance_test")
     os.makedirs(output_dir, exist_ok=True)
 
     seed = 1
@@ -45,16 +42,16 @@ def main():
     Ne = 4_000
     Ni = 1_000
     N = Ne + Ni
-    BIAS = np.ones((N, 1)) * 65.0
+    BIAS = np.ones((N, 1)) * 70.0
     reservoir_params = {
-        "model_cls": MorrisLecarCurrent,
+        "model_cls": MorrisLecar,
         "n_input": sup_tensor.size(1),
         "n_output": sup_tensor.size(1),
         "Ne": Ne,
         "Ni": Ni,
         "dt": dt,
         "BIAS": BIAS,
-        "p_sparsity": 0.01,
+        # "p_sparsity": 0.01,
         "device": device,
     }
 
@@ -67,7 +64,7 @@ def main():
     except Exception as e:
         print(f"Error exporting JSON file params: {e}")
 
-    q_range = np.linspace(20, 450, 7)
+    q_range = np.linspace(20, 400, 7)
     gbar_range = np.linspace(5, 40, 7)
 
     opt_params = {"w_in_amp": q_range, "gbar": gbar_range}
@@ -98,7 +95,7 @@ def main():
         "closed_loop": True,
     }
 
-    n_threads = 3
+    n_threads = 1
 
     bfm = BruteForceMesh(
         reservoir_kwargs=reservoir_params,
