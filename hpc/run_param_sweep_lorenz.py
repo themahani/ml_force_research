@@ -10,7 +10,7 @@ import os
 import numpy as np
 import torch
 
-from rctorch.models import MorrisLecar
+from rctorch.models import MorrisLecar, MorrisLecarCurrent
 from rctorch.optimizers import BruteForceMesh, KWArgsEncoder
 from rctorch.supervisors import LorenzAttractor
 from rctorch.utils import minmax_transform
@@ -18,7 +18,9 @@ from rctorch.utils import minmax_transform
 
 def main():
     # Define the output directory
-    output_dir = os.path.join(os.getcwd(), "bfm_output", "lorenz_conductance_test")
+    output_dir = os.path.join(
+        os.getcwd(), "bfm_output", "lorenz_current_q_300_500_gbar_1_10"
+    )
     os.makedirs(output_dir, exist_ok=True)
 
     seed = 1
@@ -44,14 +46,14 @@ def main():
     N = Ne + Ni
     BIAS = np.ones((N, 1)) * 70.0
     reservoir_params = {
-        "model_cls": MorrisLecar,
+        "model_cls": MorrisLecarCurrent,
         "n_input": sup_tensor.size(1),
         "n_output": sup_tensor.size(1),
         "Ne": Ne,
         "Ni": Ni,
         "dt": dt,
         "BIAS": BIAS,
-        # "p_sparsity": 0.01,
+        "p_sparsity": 0.01,
         "device": device,
     }
 
@@ -64,8 +66,8 @@ def main():
     except Exception as e:
         print(f"Error exporting JSON file params: {e}")
 
-    q_range = np.linspace(20, 400, 7)
-    gbar_range = np.linspace(5, 40, 7)
+    q_range = np.linspace(300, 500, 5)
+    gbar_range = np.linspace(1, 10, 7)
 
     opt_params = {"w_in_amp": q_range, "gbar": gbar_range}
     opt_params_file = os.path.join(output_dir, "opt_params.json")
