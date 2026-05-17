@@ -19,7 +19,7 @@ from rctorch.optimizers import KWArgsEncoder
 def main():
     # Define the output directory
     output_dir = os.path.join(
-        os.getcwd(), "fading_memory", "sine_current_q_300_500_gbar_1_10"
+        os.getcwd(), "fading_memory", "actual_sine_current_q_300_500_gbar_1_10"
     )
     os.makedirs(output_dir, exist_ok=True)
 
@@ -63,8 +63,8 @@ def main():
     except Exception as e:
         print(f"Error exporting JSON file params: {e}")
 
-    q_range = np.linspace(100, 400, 5)
-    gbar_range = np.linspace(0, 30, 7)
+    q_range = np.linspace(300, 500, 5)
+    gbar_range = np.linspace(1, 10, 7)
 
     opt_params = {"w_in_amp": q_range, "gbar": gbar_range}
     size = 1
